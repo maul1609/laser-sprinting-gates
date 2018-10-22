@@ -1,0 +1,4 @@
+https://www.physlab.org/wp-content/uploads/2016/03/Photodiode_circuit.pdf
+
+see figure 3, using circuit A, RBE=1 kohm, RL=10 kohm, BD140 (p-type) transistor
+
