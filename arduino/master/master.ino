@@ -37,6 +37,7 @@ unsigned long prevMillis;
 unsigned long txIntervalMillis = 1000; // send once per second
 unsigned long timer_sync[2],time_slaves[2]; 
 int valOld=LOW;
+int reset1=LOW;
 
 //===============
 
@@ -70,12 +71,19 @@ void setup() {
 //=============
 
 void loop() {
-    int val=digitalRead(9);
+    int val;
     bool gates_open;
     char test[2];
     currentMillis = millis();
     
+    val=digitalRead(9);
     
+    if((reset1==HIGH) ) {
+        val=HIGH;
+        valOld=LOW;
+        reset1=LOW;
+        delay(100);
+    }
     /*dataToSend[0]='0';
     dataToSend[1]='2';
     test[0]=dataToSend[0];
@@ -87,8 +95,10 @@ void loop() {
       
         sync_time_and_receive_gates_closed_status(&gates_closed);
         sync_time_and_receive_gates_closed_status(&gates_closed);
+        delay(100);
+        sync_time_and_receive_gates_closed_status(&gates_closed);
+        sync_time_and_receive_gates_closed_status(&gates_closed);
 
-        
 #if SERIAL
         if(gates_closed) Serial.println("Ready");
         else Serial.println("Close gates");
@@ -152,15 +162,30 @@ void loop() {
 
       
 #if SERIAL
-      Serial.println("The time was: ");
-      Serial.println((long)time_slaves[1]-(long)time_slaves[0]);
+      if(val != HIGH) {
+        Serial.println("The time was: ");
+        Serial.println((long)time_slaves[1]-(long)time_slaves[0]);
+      } else {
+        Serial.println("Reset");
+        reset1=HIGH;
+        valOld=val;
+      }
 #endif      
 #if !(SERIAL)
-      lcd.clear();
-      lcd.setCursor(0,0);
-      lcd.print("The time was");
-      lcd.setCursor(0,1);
-      lcd.print(buf);
+      if(val != HIGH) { // only if not due to button push
+        lcd.clear();
+        lcd.setCursor(0,0);
+        lcd.print("The time was");
+        lcd.setCursor(0,1);
+        lcd.print(buf);
+//        valOld=LOW;
+      } else {
+        lcd.clear();
+        lcd.setCursor(0,0);
+        lcd.print("Reset");
+        reset1=HIGH;
+        valOld=val;
+      }
 #endif      
     }    
     // now poll until gate
@@ -252,6 +277,7 @@ void sync_time_and_receive_gates_closed_status(bool *gates_closed) {
         Serial.print(n);
         Serial.println("  ========");
         Serial.print("  Data Sent ");
+        //Serial.print(rslt);
         Serial.print(dataToSend);
 #endif        
         if (rslt) {
@@ -259,8 +285,10 @@ void sync_time_and_receive_gates_closed_status(bool *gates_closed) {
             if ( radio.isAckPayloadAvailable() ) {
                 radio.read(&ackData, sizeof(ackData));
                 newData = true;
-                if(n==0) *gates_closed=ackData[0];
-                else *gates_closed *=ackData[0];
+                Serial.println("Here");
+                Serial.println(ackData[0]);
+                if(n==0) *gates_closed=(bool)ackData[0];
+                else *gates_closed *=(bool)ackData[0];
             }
             else {
 #if SERIAL

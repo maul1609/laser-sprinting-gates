@@ -9,8 +9,8 @@
 #define CE_PIN   7
 #define CSN_PIN 8
 
-//const byte thisSlaveAddress[5] = {'R','x','A','A','A'};
-const byte thisSlaveAddress[5] = {'R','x','A','A','B'};
+const byte thisSlaveAddress[5] = {'R','x','A','A','A'};
+//const byte thisSlaveAddress[5] = {'R','x','A','A','B'};
 
 RF24 radio(CE_PIN, CSN_PIN);
 
@@ -49,7 +49,7 @@ void loop() {
 
     // read photo-diode signal
     int val=analogRead(A7);
-    gate_flag=(val >= 900) ? true : false;
+    gate_flag=(val >= 1000) ? true : false;
     
     // set LED value to high if laser is detected, low if not
     if(gate_flag) { 
