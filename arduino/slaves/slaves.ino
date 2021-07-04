@@ -1,6 +1,7 @@
 
 
 // SimpleRxAckPayload- the slave or the receiver
+#include <avr/wdt.h>
 
 #include <SPI.h>
 #include <nRF24L01.h>
@@ -9,8 +10,9 @@
 #define CE_PIN   7
 #define CSN_PIN 8
 
-const byte thisSlaveAddress[5] = {'R','x','A','A','A'};
-//const byte thisSlaveAddress[5] = {'R','x','A','A','B'};
+#define SERIAL false
+//const byte thisSlaveAddress[5] = {'R','x','A','A','A'};
+const byte thisSlaveAddress[5] = {'R','x','A','A','B'};
 
 RF24 radio(CE_PIN, CSN_PIN);
 
@@ -23,17 +25,23 @@ long message_code;
 bool reset_flag=false;
 //==============
 
+
+
 void setup() {
 
     pinMode(2,OUTPUT);
     digitalWrite(2,HIGH);
-
+#if SERIAL
     Serial.begin(9600);
 
     Serial.println("SimpleRxAckPayload Starting");
+#endif
+
     radio.begin();
-    //radio.setDataRate( RF24_250KBPS );
-    radio.setPALevel(RF24_PA_MIN); // "short range setting" - increase if you want more range AND have a good power supply
+    radio.setChannel(120);
+    //radio.setAutoAck(false);
+    //radio.setPALevel(RF24_PA_MAX); // "short range setting" - increase if you want more range AND have a good power supply
+    radio.setDataRate( RF24_1MBPS );
 
     radio.openReadingPipe(1, thisSlaveAddress);
 
@@ -41,6 +49,7 @@ void setup() {
     radio.writeAckPayload(1, &ackData, sizeof(ackData)); // pre-load data
 
     radio.startListening();
+    //reset1();
 }
 
 //==========
@@ -49,13 +58,15 @@ void loop() {
 
     // read photo-diode signal
     int val=analogRead(A7);
-    gate_flag=(val >= 1000) ? true : false;
+    gate_flag=(val >= 950) ? true : false;
     
     // set LED value to high if laser is detected, low if not
     if(gate_flag) { 
       digitalWrite(2,HIGH);
     }
-    else digitalWrite(2,LOW);
+    else {
+      digitalWrite(2,LOW);
+    }
 
 
     if(gate_flag==false && gate_flag_old==true && reset_flag==true) {
@@ -83,10 +94,14 @@ void getData() {
         
         message_code=atol(str1);
         if(message_code==0) {
+#if SERIAL
           Serial.println(message_code);
+#endif
           timer_sync=atol(&dataReceived[2]);
           reset_flag=true;
+#if SERIAL          
           Serial.println(dataReceived);
+#endif
         } else if(message_code==1) {
           // send the time the gate was opened 
           
@@ -100,12 +115,14 @@ void getData() {
 
 void showData() {
     if (newData == true) {
+#if SERIAL      
         Serial.print("Data received ");
         Serial.println(dataReceived);
         Serial.print(" ackPayload sent ");
         Serial.print(ackData[0]);
         Serial.print(", ");
         Serial.println(ackData[1]);
+#endif        
         newData = false;
     }
 }
@@ -125,4 +142,18 @@ void updateReplyData() {
     ackData[1]=(long)timer_sync;
     ackData[2]=(long)gate_open_timer-(long)timer_local_sync;
     radio.writeAckPayload(1, &ackData, sizeof(ackData)); // load the payload for the next time
+}
+
+void reset1()
+{
+  // enable the watchdog timer. This will wake up the board after 120ms
+  wdt_enable(WDTO_120MS);
+  
+  // go to deep sleep
+  if (true)
+  {
+    SMCR |= (1 << 2); // power down mode
+    SMCR |= 1;        // enable sleep;
+    __asm__ __volatile__("sleep");
+  }    
 }

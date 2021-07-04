@@ -1,0 +1,16 @@
+"Qty";"Value";"Device";"Package";"Parts";"Description";"PROD_ID";"VALUE";
+"1";"0.1uF";"0.1UF-KIT-EZ-50V-20%";"CAP-PTH-SMALL-KIT";"C1";"0.1µF ceramic capacitors";"CAP-08370";"0.1uF";
+"1";"100";"100OHM-HORIZ-1/4W-1%";"AXIAL-0.3";"R3";"100Ω resistor";"RES-12181";"100";
+"1";"10K";"1MOHM-HORIZ-1/4W-5%";"AXIAL-0.3";"R2";"1MΩ resistor";"RES-09329";"1M";
+"1";"1K";"1MOHM-HORIZ-1/4W-5%";"AXIAL-0.3";"R1";"1MΩ resistor";"RES-09329";"1M";
+"2";"1k";"1KOHM-HORIZ-1/4W-1%";"AXIAL-0.3";"R4, R5";"1kΩ resistor";"RES-12182";"1k";
+"1";"1mF";"1000UF-RADIAL-5MM-25V-20%";"CPOL-RADIAL-5MM-10MM";"C3";"1,000µF/1mF ceramic capacitors";"CAP-09538";"1mF";
+"1";"1uF";"10UF-POLAR-RADIAL-2.5MM-25V-20%";"CPOL-RADIAL-2.5MM-5MM";"C2";"10.0µF polarized capacitors";"CAP-08440";"10uF";
+"1";"BD140";"BD140";"TO126AV";"Q1";"PNP TRANSISTOR";"";"";
+"1";"NANO_FOOTPRINT";"NANO_FOOTPRINT";"NANO";"J1";"Generic Nano Footprint";"";"";
+"1";"NRF24L01";"NRF24L01";"NRF24L01";"U$1";"nrF54L01 2.4GHz with 100 Channels Emitter/Reveiver SPI Controlled";"";"";
+"1";"PHOTOTRANSISTOR-SFH309";"PHOTOTRANSISTOR-SFH309";"SFH";"U$2";"";"";"";
+"1";"RED";"LED5MM-KIT";"LED_5MM-KIT";"D1";"LED (Generic)";"";"";
+"1";"SLIDE-SWITCH-CONRAD708070";"SLIDE-SWITCH-CONRAD708070";"SLIDE-SWITCH-CONRAD708070";"U$3";"";"";"";
+"1";"VCC_1";"CONN_02";"1X02";"J2";"Multi connection point. Often used as Generic Header-pin footprint for 0.1 inch spaced/style header connections";"";"";
+"1";"V_REG_338T";"V_REG_317SINK";"TO220-ADJ";"U1";"Voltage Regulator";"";"";

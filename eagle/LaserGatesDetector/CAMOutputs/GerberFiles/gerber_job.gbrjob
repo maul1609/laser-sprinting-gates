@@ -1,0 +1,24 @@
+{
+    "Header": {
+        "Comment": "All values are metric (mm)",
+        "CreationDate": "2021-06-30T12:30:40Z",
+        "GenerationSoftware": {
+            "Application": "EAGLE",
+            "Vendor": "Autodesk",
+            "Version": "9.6.2"
+        },
+        "Part": "Single"
+    },
+    "Overall": {
+        "BoardThickness": 1.57,
+        "LayerNumber": 2,
+        "Name": {
+            "ProjectId": "LaserGatesDetector"
+        },
+        "Owner": "p connolly <p.connolly@manchester.ac.uk>",
+        "Size": {
+            "X": 88.57,
+            "Y": 62.22
+        }
+    }
+}

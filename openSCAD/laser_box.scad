@@ -5,7 +5,7 @@ th=2.5;
 
 BOTTOM=1;
 TOP=2;
-part=TOP;
+part=BOTTOM;
 
 if(part==BOTTOM) {
     difference() 
@@ -53,7 +53,7 @@ if(part==BOTTOM) {
             }                
         }
         
-        translate([0,0,-zdim/2]) rotate([90,0,90]) tripod();
+        translate([5,0,-zdim/2]) rotate([90,0,90]) tripod();
 
         translate([-(xdim/2-th/2),-(ydim/2-th/2),th/2]) {
             cylinder(h=zdim,d=1.5,$fn=30,center=true);
@@ -77,6 +77,11 @@ if(part==BOTTOM) {
         
         for (i=[1:3])
             translate([xdim/2-7.5,0,-zdim/2+10+(i-1)*6]) rotate([90,0,0]) cylinder(d=3,h=100,$fn=16,center=true); 
+        
+        // hole for charge point
+        translate([-20.25,6,-zdim/2]) cube([17,15,10],center=true);
+        // battery slot
+        translate([-20.25,ydim/2,7.25]) cube([10,10,20],true);
 
     }
 } else if(part==TOP) {
@@ -142,6 +147,8 @@ if(part==BOTTOM) {
             translate([0,0,zdim/2+th/2-1.5]) cube([xdim+2.5,ydim+2.5,3],true);
             translate([xdim/2,0,zdim/2+th/2-1.5]) cube([10,15,10],true);
         }
+        // battery slot
+        translate([-20.25,-ydim/2,5.25]) cube([10,10,20],true);
     }
 }
 

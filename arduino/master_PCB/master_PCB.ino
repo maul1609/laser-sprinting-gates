@@ -9,7 +9,7 @@
 #include <RF24.h>
 
 #include <LiquidCrystal.h>
-LiquidCrystal lcd(1,0,5,4,3,2);
+LiquidCrystal lcd(10,9,5,4,3,2);
 
 #define CE_PIN   7
 #define CSN_PIN 8
@@ -50,7 +50,7 @@ void setup() {
 #if !(SERIAL)
     lcd.begin(16,2);
 #endif    
-    pinMode(9,INPUT);
+    pinMode(6,INPUT);
 
     radio.begin();
     radio.setChannel(120);
@@ -70,7 +70,6 @@ void setup() {
 
 
 
-
 //=============
 
 void loop() {
@@ -79,8 +78,8 @@ void loop() {
     char test[2];
     currentMillis = millis();
     
-    val=digitalRead(9);
-    
+    val=digitalRead(6);
+    Serial.println(val);
     if((reset1==HIGH) ) {
         val=HIGH;
         valOld=LOW;
@@ -143,7 +142,7 @@ void loop() {
     // poll until gates open
     if(gates_closed) {
       while(!gates_open) {
-        val=digitalRead(9);
+        val=digitalRead(6);
         if((val==HIGH) ) break;
   
   
