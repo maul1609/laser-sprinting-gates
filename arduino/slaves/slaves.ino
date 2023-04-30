@@ -11,8 +11,14 @@
 #define CSN_PIN 8
 
 #define SERIAL false
-//const byte thisSlaveAddress[5] = {'R','x','A','A','A'};
+
+#define GATE 0
+#if GATE==0
+const byte thisSlaveAddress[5] = {'R','x','A','A','A'};
+#endif
+#if GATE==1
 const byte thisSlaveAddress[5] = {'R','x','A','A','B'};
+#endif
 
 RF24 radio(CE_PIN, CSN_PIN);
 
@@ -58,8 +64,9 @@ void loop() {
 
     // read photo-diode signal
     int val=analogRead(A7);
-    gate_flag=(val >= 950) ? true : false;
-    
+    // 950 worked for a long time in summmer / autumn
+    gate_flag=(val >= 750) ? true : false;
+
     // set LED value to high if laser is detected, low if not
     if(gate_flag) { 
       digitalWrite(2,HIGH);
@@ -85,8 +92,8 @@ void loop() {
 
 void getData() {
     char str1[2];
+    unsigned long test = millis();
     if ( radio.available() ) {
-        timer_local_sync=millis();
         
         radio.read( &dataReceived, sizeof(dataReceived) );
         str1[0]=dataReceived[0];
@@ -94,6 +101,7 @@ void getData() {
         
         message_code=atol(str1);
         if(message_code==0) {
+          timer_local_sync=test; // this is when the sync signal is received on the slave
 #if SERIAL
           Serial.println(message_code);
 #endif
@@ -140,7 +148,7 @@ void updateReplyData() {
     }
     ackData[0]=((long)gate_flag)*((long)reset_flag);
     ackData[1]=(long)timer_sync;
-    ackData[2]=(long)gate_open_timer-(long)timer_local_sync;
+    ackData[2]=(long)gate_open_timer-(long)timer_local_sync;  // this is how long gate was closed for
     radio.writeAckPayload(1, &ackData, sizeof(ackData)); // load the payload for the next time
 }
 

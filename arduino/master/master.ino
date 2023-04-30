@@ -162,7 +162,13 @@ void loop() {
       gates_closed=false;
 
       // calculate mm, ss, etc
-      unsigned long runMillis=abs((long)time_slaves[1]-(long)time_slaves[0]);
+//      unsigned long runMillis=abs(((long)time_slaves[1]-(long)timer_sync[1])-
+//            ((long)time_slaves[0]-(long)timer_sync[0]));
+      unsigned long runMillis=abs((long)time_slaves[1]-(long)time_slaves[0]+
+            abs((long)timer_sync[1]-(long)timer_sync[0])); 
+            // note, the difference between time_slaves[1] and [2] is less than actual time 
+            // because the time_slaves[1] clock starts ticking after [0]
+            // therefore add the offset on
       unsigned long allSeconds=runMillis/1000.;
       int runHours=allSeconds/3600;
       int secsRemaining=allSeconds%3600;
@@ -213,6 +219,7 @@ void loop() {
 
 
 void poll_and_receive_time_and_gates_open_status(bool *gates_open) {
+    bool rslt;
 
         // call each slave in turn
     for (byte n = 0; n < numSlaves; n++){
@@ -222,7 +229,6 @@ void poll_and_receive_time_and_gates_open_status(bool *gates_open) {
 
         //timer_sync[n] = millis();
         sprintf(dataToSend,"%02d%ld",1,timer_sync[n]);
-        bool rslt;
         rslt = radio.write( &dataToSend, sizeof(dataToSend) );
             // Always use sizeof() as it gives the size as the number of bytes.
             // For example if dataToSend was an int sizeof() would correctly return 2
@@ -237,7 +243,7 @@ void poll_and_receive_time_and_gates_open_status(bool *gates_open) {
         if (rslt) {
             if ( radio.isAckPayloadAvailable() ) {
                 radio.read(&ackData, sizeof(ackData));
-                time_slaves[n]=ackData[2];
+                time_slaves[n]=ackData[2]; // this is how long each gate was closed for
                 newData = true;
                 if(n==0) *gates_open=!(bool)ackData[0];
                 else *gates_open *=!(bool)ackData[0];
@@ -268,7 +274,8 @@ void poll_and_receive_time_and_gates_open_status(bool *gates_open) {
 //=================
 
 void sync_time_and_receive_gates_closed_status(bool *gates_closed) {
-
+    bool rslt;
+  
         // call each slave in turn
     for (byte n = 0; n < numSlaves; n++){
 
@@ -279,7 +286,7 @@ void sync_time_and_receive_gates_closed_status(bool *gates_closed) {
         dataToSend[5] = n + '0';
         timer_sync[n] = millis();
         sprintf(dataToSend,"%02d%ld",0,timer_sync[n]);
-        bool rslt;
+        // Write the timer sync (current time) to the slave (i.e. the detector)
         rslt = radio.write( &dataToSend, sizeof(dataToSend) );
             // Always use sizeof() as it gives the size as the number of bytes.
             // For example if dataToSend was an int sizeof() would correctly return 2
@@ -292,14 +299,19 @@ void sync_time_and_receive_gates_closed_status(bool *gates_closed) {
         //Serial.print(rslt);
         Serial.print(dataToSend);
 #endif        
+        // receive a message back from the slave
         if (rslt) {
             if ( radio.isAckPayloadAvailable() ) {
+                //timer_sync[n] = millis();
                 radio.read(&ackData, sizeof(ackData));
                 newData = true;
+#if SERIAL
                 Serial.println("Here");
                 Serial.println(ackData[0]);
+#endif
                 if(n==0) *gates_closed=(bool)ackData[0];
                 else *gates_closed *=(bool)ackData[0];
+                //timer_sync[n] = millis();
             }
             else {
 #if SERIAL

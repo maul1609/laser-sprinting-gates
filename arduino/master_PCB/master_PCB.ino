@@ -16,12 +16,27 @@ LiquidCrystal lcd(10,9,5,4,3,2);
 
 #define SERIAL false
 
+#define SERIAL_NO 1
+
 const byte numSlaves = 2;
+#if SERIAL_NO==0
+const byte slaveAddress[numSlaves][5] = {
+        // each slave needs a different address
+                            {'R','x','A','C','C'},
+                            {'R','x','A','B','B'}
+                        };
+#endif
+
+#if SERIAL_NO==1
 const byte slaveAddress[numSlaves][5] = {
         // each slave needs a different address
                             {'R','x','A','A','A'},
                             {'R','x','A','A','B'}
                         };
+#endif
+
+
+                       
 
 RF24 radio(CE_PIN, CSN_PIN); // Create a Radio
 
@@ -55,8 +70,15 @@ void setup() {
     radio.begin();
     radio.setChannel(120);
     //radio.setAutoAck(false);
-    //radio.setPALevel(RF24_PA_MAX); // "short range setting" - increase if you want more range AND have a good power supply
+#if SERIAL_NO==0
+    radio.setPALevel(RF24_PA_MIN); // "short range setting" - increase if you want more range AND have a good power supply
+    radio.setDataRate( RF24_250KBPS );
+#endif
+
+#if SERIAL_NO==1
+    radio.setPALevel(RF24_PA_MIN); // "short range setting" - increase if you want more range AND have a good power supply
     radio.setDataRate( RF24_1MBPS );
+#endif
 
     radio.enableAckPayload();
 
@@ -79,7 +101,9 @@ void loop() {
     currentMillis = millis();
     
     val=digitalRead(6);
+#if SERIAL    
     Serial.println(val);
+#endif
     if((reset1==HIGH) ) {
         val=HIGH;
         valOld=LOW;
@@ -161,7 +185,16 @@ void loop() {
       gates_closed=false;
 
       // calculate mm, ss, etc
-      unsigned long runMillis=abs((long)time_slaves[1]-(long)time_slaves[0]);
+      // how long the gate was closed for, relative to when the message was sent
+//      unsigned long runMillis=abs(((long)time_slaves[1]-(long)timer_sync[1])-
+//            ((long)time_slaves[0]-(long)timer_sync[0]));
+      unsigned long runMillis=abs((long)time_slaves[1]-(long)time_slaves[0]+
+            abs((long)timer_sync[1]-(long)timer_sync[0])); 
+            // note, the difference between time_slaves[1] and [2] is less than actual time 
+            // because the time_slaves[1] clock starts ticking after [0]
+            // therefore add the offset on
+//      unsigned long runMillis=abs((long)time_slaves[0]-(long)time_slaves[1]);
+      //unsigned long runMillis = (long)timer_sync[1]-(long)timer_sync[0];
       unsigned long allSeconds=runMillis/1000.;
       int runHours=allSeconds/3600;
       int secsRemaining=allSeconds%3600;
@@ -189,6 +222,15 @@ void loop() {
         lcd.print("The time was");
         lcd.setCursor(0,1);
         lcd.print(buf);
+
+        /*lcd.clear();
+        lcd.setCursor(0,0);
+        sprintf(buf,"%ld",(long)time_slaves[0]+(long)timer_sync[0]);
+        lcd.print(buf);
+        lcd.setCursor(0,1);
+        sprintf(buf,"%ld",(long)time_slaves[1]+(long)timer_sync[1]);
+        lcd.print(buf);*/
+
 //        valOld=LOW;
       } else {
         lcd.clear();
@@ -212,16 +254,16 @@ void loop() {
 
 
 void poll_and_receive_time_and_gates_open_status(bool *gates_open) {
+    bool rslt;
 
         // call each slave in turn
     for (byte n = 0; n < numSlaves; n++){
 
-            // open the writing pipe with the address of a slave
+        // open the writing pipe with the address of a slave
         radio.openWritingPipe(slaveAddress[n]);
 
         //timer_sync[n] = millis();
         sprintf(dataToSend,"%02d%ld",1,timer_sync[n]);
-        bool rslt;
         rslt = radio.write( &dataToSend, sizeof(dataToSend) );
             // Always use sizeof() as it gives the size as the number of bytes.
             // For example if dataToSend was an int sizeof() would correctly return 2
@@ -236,7 +278,8 @@ void poll_and_receive_time_and_gates_open_status(bool *gates_open) {
         if (rslt) {
             if ( radio.isAckPayloadAvailable() ) {
                 radio.read(&ackData, sizeof(ackData));
-                time_slaves[n]=ackData[2];
+                //timer_sync[n]=ackData[1];
+                time_slaves[n]=ackData[2]; // this is how long each gate was closed for
                 newData = true;
                 if(n==0) *gates_open=!(bool)ackData[0];
                 else *gates_open *=!(bool)ackData[0];
@@ -267,18 +310,23 @@ void poll_and_receive_time_and_gates_open_status(bool *gates_open) {
 //=================
 
 void sync_time_and_receive_gates_closed_status(bool *gates_closed) {
-
+    bool rslt;
         // call each slave in turn
     for (byte n = 0; n < numSlaves; n++){
 
             // open the writing pipe with the address of a slave
         radio.openWritingPipe(slaveAddress[n]);
 
-            // include the slave number in the message
+        // include the slave number in the message
         dataToSend[5] = n + '0';
         timer_sync[n] = millis();
         sprintf(dataToSend,"%02d%ld",0,timer_sync[n]);
-        bool rslt;
+        /*dataToSend[0]='0';
+        dataToSend[1]='0';
+        itoa(timer_sync[n],&dataToSend[2],10);*/
+ 
+        //timer_sync[n] = millis();
+        // Write the timer sync (current time) to the slave (i.e. the detector)
         rslt = radio.write( &dataToSend, sizeof(dataToSend) );
             // Always use sizeof() as it gives the size as the number of bytes.
             // For example if dataToSend was an int sizeof() would correctly return 2
@@ -291,14 +339,23 @@ void sync_time_and_receive_gates_closed_status(bool *gates_closed) {
         //Serial.print(rslt);
         Serial.print(dataToSend);
 #endif        
+
+        // receive a message back from the slave
         if (rslt) {
             if ( radio.isAckPayloadAvailable() ) {
                 radio.read(&ackData, sizeof(ackData));
                 newData = true;
+
+                
+#if SERIAL
                 Serial.println("Here");
                 Serial.println(ackData[0]);
+#endif        
+
+
                 if(n==0) *gates_closed=(bool)ackData[0];
                 else *gates_closed *=(bool)ackData[0];
+                //timer_sync[n] = millis();
             }
             else {
 #if SERIAL
@@ -354,7 +411,7 @@ void showData(byte n) {
 //================
 
 void updateMessage() {
-        // so you can see that new data is being sent
+    // so you can see that new data is being sent
     txNum += 1;
     if (txNum > '9') {
         txNum = '0';

@@ -11,8 +11,26 @@
 #define CSN_PIN 8
 
 #define SERIAL false
-const byte thisSlaveAddress[5] = {'R','x','A','A','A'};
-//const byte thisSlaveAddress[5] = {'R','x','A','A','B'};
+
+#define SERIAL_NO 1
+#define GATE 0
+
+#if SERIAL_NO==0
+#if GATE==0
+const byte thisSlaveAddress[5] = {'R','x','A','C','C'}; // gate 0
+#else
+const byte thisSlaveAddress[5] = {'R','x','A','B','B'}; // gate 1
+#endif
+#endif
+
+#if SERIAL_NO==1
+#if GATE==0
+const byte thisSlaveAddress[5] = {'R','x','A','A','A'}; // gate 0
+#else
+const byte thisSlaveAddress[5] = {'R','x','A','A','B'}; // gate 1
+#endif
+#endif
+
 
 RF24 radio(CE_PIN, CSN_PIN);
 
@@ -40,8 +58,14 @@ void setup() {
     radio.begin();
     radio.setChannel(120);
     //radio.setAutoAck(false);
-    //radio.setPALevel(RF24_PA_MAX); // "short range setting" - increase if you want more range AND have a good power supply
+#if SERIAL_NO==0
+    radio.setPALevel(RF24_PA_MIN); // "short range setting" - increase if you want more range AND have a good power supply
+    radio.setDataRate( RF24_250KBPS );
+#endif
+
+#if SERIAL_NO==1
     radio.setDataRate( RF24_1MBPS );
+#endif
 
     radio.openReadingPipe(1, thisSlaveAddress);
 
@@ -83,10 +107,11 @@ void loop() {
 
 //============
 
+// get data from the master
 void getData() {
     char str1[2];
+    unsigned long test = millis();
     if ( radio.available() ) {
-        timer_local_sync=millis();
         
         radio.read( &dataReceived, sizeof(dataReceived) );
         str1[0]=dataReceived[0];
@@ -94,10 +119,12 @@ void getData() {
         
         message_code=atol(str1);
         if(message_code==0) {
+          
+          timer_local_sync=test; // this is when the sync signal is received on the slave
 #if SERIAL
           Serial.println(message_code);
 #endif
-          timer_sync=atol(&dataReceived[2]);
+          timer_sync=atol(&dataReceived[2]); // this is when the sync signal is sent (on the master)
           reset_flag=true;
 #if SERIAL          
           Serial.println(dataReceived);
@@ -140,7 +167,7 @@ void updateReplyData() {
     }
     ackData[0]=((long)gate_flag)*((long)reset_flag);
     ackData[1]=(long)timer_sync;
-    ackData[2]=(long)gate_open_timer-(long)timer_local_sync;
+    ackData[2]=(long)gate_open_timer-(long)timer_local_sync; // this is how long gate was closed for
     radio.writeAckPayload(1, &ackData, sizeof(ackData)); // load the payload for the next time
 }
 
